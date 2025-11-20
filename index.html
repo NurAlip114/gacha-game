@@ -113,16 +113,25 @@
             color: var(--accent-color);
         }
 
+        /* === PERBAIKAN RESPONSIF UNTUK RODA === */
         #wheelContainer {
             position: relative;
-            width: 100%;
-            max-width: 350px;
-            height: 350px;
+            /* Gunakan lebar relatif dan max-width untuk desktop */
+            width: 90%;
+            max-width: 400px;
+            /* aspect-ratio memastikan selalu berbentuk lingkaran sempurna */
+            aspect-ratio: 1 / 1;
             margin: 2rem auto;
         }
 
-        #wheel {
+        /* Container baru untuk animasi putar, bukan canvas-nya langsung */
+        #wheelSpinner {
+            width: 100%;
+            height: 100%;
             transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+        }
+
+        #wheel {
             width: 100%;
             height: 100%;
             border-radius: 50%;
@@ -301,13 +310,8 @@
             transform: scale(1.1);
         }
 
-        /* Responsive */
+        /* Responsive adjustments untuk font dan tombol di HP */
         @media (max-width: 768px) {
-            #wheelContainer {
-                max-width: 280px;
-                height: 280px;
-            }
-            
             h1 {
                 font-size: 1.8rem;
             }
@@ -323,11 +327,6 @@
         }
 
         @media (max-width: 480px) {
-            #wheelContainer {
-                max-width: 250px;
-                height: 250px;
-            }
-            
             h1 {
                 font-size: 1.5rem;
             }
@@ -408,7 +407,10 @@
             </div>
             <div id="wheelContainer">
                 <div id="pointer"></div>
-                <canvas id="orderWheel" width="350" height="350"></canvas>
+                <!-- PERBAIKAN: Canvas dibungkus dalam div untuk rotasi -->
+                <div id="wheelSpinner">
+                    <canvas id="orderWheel"></canvas>
+                </div>
             </div>
             <button id="spinOrderBtn" class="btn btn-warning btn-game w-100"><i class="bi bi-arrow-repeat"></i> Putar Urutan</button>
         </div>
@@ -428,7 +430,10 @@
             </div>
             <div id="wheelContainer">
                 <div id="pointer"></div>
-                <canvas id="prizeWheel" width="350" height="350"></canvas>
+                <!-- PERBAIKAN: Canvas dibungkus dalam div untuk rotasi -->
+                <div id="wheelSpinner">
+                    <canvas id="prizeWheel"></canvas>
+                </div>
             </div>
             <div class="loading-spinner" id="loadingSpinner"></div>
             <button id="spinPrizeBtn" class="btn btn-success btn-game w-100"><i class="bi bi-dice-5-fill"></i> Gacha!</button>
@@ -566,27 +571,14 @@
                 Object.values(phases).forEach(p => p.classList.remove('active'));
                 phases[phaseName].classList.add('active');
                 
-                // Update progress bar
                 let progress = 0;
                 let step = 0;
                 
                 switch(phaseName) {
-                    case 'input':
-                        progress = 0;
-                        step = 0;
-                        break;
-                    case 'order':
-                        progress = 25;
-                        step = 1;
-                        break;
-                    case 'game':
-                        progress = 50;
-                        step = 2;
-                        break;
-                    case 'summary':
-                        progress = 100;
-                        step = 3;
-                        break;
+                    case 'input': progress = 0; step = 0; break;
+                    case 'order': progress = 25; step = 1; break;
+                    case 'game': progress = 50; step = 2; break;
+                    case 'summary': progress = 100; step = 3; break;
                 }
                 
                 const progressBar = document.querySelector('.progress-bar');
@@ -598,12 +590,23 @@
                 }
             }
 
+            // === PERBAIKAN FUNGSI GAMBAR RODA UNTUK RESPONSIVITAS ===
             function drawWheel(canvasId, segments) {
                 const canvas = document.getElementById(canvasId);
                 const ctx = canvas.getContext('2d');
+                
+                // Dapatkan ukuran container untuk menyesuaikan canvas
+                const container = canvas.parentElement;
+                const containerSize = container.offsetWidth;
+                
+                // Set ukuran 'drawing' canvas agar tajam dan tidak blur
+                // Ini harus sama dengan ukuran tampilan CSS-nya
+                canvas.width = containerSize;
+                canvas.height = containerSize;
+
                 const centerX = canvas.width / 2;
                 const centerY = canvas.height / 2;
-                const radius = canvas.width / 2 - 10;
+                const radius = canvas.width / 2 - 10; // Jarak dari tepi
                 const arc = Math.PI * 2 / segments.length;
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -622,7 +625,8 @@
 
                     ctx.save();
                     ctx.fillStyle = segment.isZonk ? '#fff' : '#000';
-                    ctx.font = 'bold 16px Poppins';
+                    // Sesuaikan ukuran font berdasarkan ukuran roda
+                    ctx.font = `bold ${containerSize / 20}px Poppins`;
                     ctx.translate(centerX, centerY);
                     ctx.rotate(angle + arc / 2);
                     ctx.textAlign = 'center';
@@ -632,14 +636,17 @@
                 });
             }
             
+            // === PERBAIKAN FUNGSI PUTAR RODA ===
             function spinWheel(canvasId, callback) {
                 const canvas = document.getElementById(canvasId);
-                const spinAngle = Math.random() * 360 + 360 * 5;
-                const currentRotation = parseFloat(canvas.dataset.rotation || 0);
+                // Targetkan div pembungkus (spinner) untuk rotasi, bukan canvas
+                const spinner = canvas.parentElement; 
+                const spinAngle = Math.random() * 360 + 360 * 5; // Putar 5-6 kali
+                const currentRotation = parseFloat(spinner.dataset.rotation || 0);
                 const newRotation = currentRotation + spinAngle;
                 
-                canvas.style.transform = `rotate(${newRotation}deg)`;
-                canvas.dataset.rotation = newRotation;
+                spinner.style.transform = `rotate(${newRotation}deg)`;
+                spinner.dataset.rotation = newRotation;
 
                 setTimeout(() => {
                     const normalizedAngle = newRotation % 360;
@@ -647,7 +654,7 @@
                     const segmentAngle = 360 / (canvasId === 'orderWheel' ? gameState.players.length : gameState.prizes.length);
                     const winningIndex = Math.floor(winningAngle / segmentAngle);
                     callback(winningIndex);
-                }, 4000);
+                }, 4000); // Waktu harus sama dengan durasi CSS transition
             }
 
             function createConfetti() {
@@ -662,9 +669,7 @@
                         confetti.style.animationDuration = `${Math.random() * 3 + 2}s`;
                         document.body.appendChild(confetti);
                         
-                        setTimeout(() => {
-                            confetti.remove();
-                        }, 5000);
+                        setTimeout(() => confetti.remove(), 5000);
                     }, i * 30);
                 }
             }
@@ -675,19 +680,14 @@
                 if (currentInputs.length < 5) {
                     const newInputDiv = document.createElement('div');
                     newInputDiv.className = 'player-input';
-                    newInputDiv.innerHTML = `
-                        <i class="bi bi-person-fill"></i>
-                        <input type="text" class="form-control player-name" placeholder="Nama Pemain ${currentInputs.length + 1}">
-                    `;
+                    newInputDiv.innerHTML = `<i class="bi bi-person-fill"></i><input type="text" class="form-control player-name" placeholder="Nama Pemain ${currentInputs.length + 1}">`;
                     playerInputsDiv.appendChild(newInputDiv);
                     if (currentInputs.length === 4) addPlayerBtn.disabled = true;
                 }
             });
 
             startOrderBtn.addEventListener('click', () => {
-                const names = Array.from(document.querySelectorAll('.player-name'))
-                                   .map(input => input.value.trim())
-                                   .filter(name => name !== '');
+                const names = Array.from(document.querySelectorAll('.player-name')).map(input => input.value.trim()).filter(name => name !== '');
 
                 if (names.length < 2) {
                     alert('Masukkan setidaknya 2 pemain!');
@@ -696,21 +696,22 @@
 
                 gameState.players = names.map(name => ({ name, prize: null }));
                 showPhase('order');
-                drawWheel('orderWheel', gameState.players.map(p => ({ text: p.name, color: `hsl(${Math.random() * 360}, 70%, 50%)` })));
+                // Gambar ulang roda agar sesuai dengan ukuran container saat fase berubah
+                setTimeout(() => drawWheel('orderWheel', gameState.players.map(p => ({ text: p.name, color: `hsl(${Math.random() * 360}, 70%, 50%)` }))), 100);
             });
 
             // --- PHASE 2: ORDER LOGIC ---
             spinOrderBtn.addEventListener('click', () => {
                 spinOrderBtn.disabled = true;
                 spinWheel('orderWheel', (winningIndex) => {
-                    // Buat urutan: pemenang pertama, sisanya diacak
                     const winner = gameState.players[winningIndex];
                     const others = gameState.players.filter((p, i) => i !== winningIndex);
                     gameState.playerOrder = [winningIndex, ...others.map(p => gameState.players.indexOf(p)).sort(() => Math.random() - 0.5)];
                     
                     setTimeout(() => {
                         showPhase('game');
-                        drawWheel('prizeWheel', gameState.prizes);
+                        // Gambar ulang roda hadiah di fase baru
+                        setTimeout(() => drawWheel('prizeWheel', gameState.prizes), 100);
                         updateTurnDisplay();
                         createPlayerTurnIndicator();
                     }, 1500);
@@ -726,17 +727,11 @@
 
             function createPlayerTurnIndicator() {
                 playerTurnIndicator.innerHTML = '';
-                
                 gameState.playerOrder.forEach((playerIndex, i) => {
                     const dot = document.createElement('div');
                     dot.className = 'player-dot';
-                    
-                    if (i < gameState.currentPlayerIndex) {
-                        dot.classList.add('completed');
-                    } else if (i === gameState.currentPlayerIndex) {
-                        dot.classList.add('active');
-                    }
-                    
+                    if (i < gameState.currentPlayerIndex) dot.classList.add('completed');
+                    else if (i === gameState.currentPlayerIndex) dot.classList.add('active');
                     playerTurnIndicator.appendChild(dot);
                 });
             }
@@ -763,12 +758,9 @@
                 });
             });
 
-            // Event listener untuk kedua modal
             [prizeModal._element, jumpscareModal._element].forEach(el => {
                 el.addEventListener('hidden.bs.modal', () => {
                     gameState.currentPlayerIndex++;
-                    
-                    // Update player turn indicator
                     const dots = playerTurnIndicator.querySelectorAll('.player-dot');
                     if (dots[gameState.currentPlayerIndex - 1]) {
                         dots[gameState.currentPlayerIndex - 1].classList.remove('active');
@@ -777,9 +769,7 @@
                     
                     if (gameState.currentPlayerIndex < gameState.players.length) {
                         updateTurnDisplay();
-                        if (dots[gameState.currentPlayerIndex]) {
-                            dots[gameState.currentPlayerIndex].classList.add('active');
-                        }
+                        if (dots[gameState.currentPlayerIndex]) dots[gameState.currentPlayerIndex].classList.add('active');
                         spinPrizeBtn.disabled = false;
                     } else {
                         showSummary();
@@ -790,14 +780,12 @@
             // --- PHASE 4: SUMMARY LOGIC ---
             function showSummary() {
                 showPhase('summary');
-                summaryListDiv.innerHTML = ''; // Kosongkan dulu
-                
+                summaryListDiv.innerHTML = '';
                 gameState.players.forEach((player, index) => {
                     const prize = player.prize;
                     const card = document.createElement('div');
                     card.className = 'summary-card animate__animated animate__fadeInUp';
                     card.style.animationDelay = `${index * 0.1}s`;
-                    
                     card.innerHTML = `
                         <div class="d-flex align-items-center">
                             <img src="${prize.image}" alt="${prize.text}">
@@ -812,32 +800,24 @@
             }
             
             playAgainBtn.addEventListener('click', () => {
-                // Reset game state
                 gameState.players = [];
                 gameState.playerOrder = [];
                 gameState.currentPlayerIndex = 0;
                 
-                // Reset UI
                 document.querySelectorAll('.player-name').forEach(input => input.value = '');
                 playerInputsDiv.innerHTML = `
-                    <div class="player-input">
-                        <i class="bi bi-person-fill"></i>
-                        <input type="text" class="form-control player-name" placeholder="Nama Pemain 1" required>
-                    </div>
-                    <div class="player-input">
-                        <i class="bi bi-person-fill"></i>
-                        <input type="text" class="form-control player-name" placeholder="Nama Pemain 2">
-                    </div>
+                    <div class="player-input"><i class="bi bi-person-fill"></i><input type="text" class="form-control player-name" placeholder="Nama Pemain 1" required></div>
+                    <div class="player-input"><i class="bi bi-person-fill"></i><input type="text" class="form-control player-name" placeholder="Nama Pemain 2"></div>
                 `;
                 addPlayerBtn.disabled = false;
                 spinOrderBtn.disabled = false;
                 spinPrizeBtn.disabled = false;
                 
-                // Reset canvas rotation
-                document.getElementById('orderWheel').style.transform = 'rotate(0deg)';
-                document.getElementById('prizeWheel').style.transform = 'rotate(0deg)';
-                delete document.getElementById('orderWheel').dataset.rotation;
-                delete document.getElementById('prizeWheel').dataset.rotation;
+                // === PERBAIKAN: Reset rotasi pada elemen yang benar ===
+                document.querySelectorAll('#wheelSpinner').forEach(spinner => {
+                    spinner.style.transform = 'rotate(0deg)';
+                    delete spinner.dataset.rotation;
+                });
 
                 showPhase('input');
             });
