@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Wheel Gacha Multi-Pemain</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Animate.css untuk animasi tambahan -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #6a11cb;
+            --secondary-color: #2575fc;
+            --accent-color: #f8b500;
+            --dark-bg: #1a1a2e;
+            --card-bg: #16213e;
+            --text-light: #f5f5f5;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: var(--text-light);
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            padding: 10px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+            padding: 20px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .game-phase {
+            display: none;
+        }
+
+        .game-phase.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: var(--accent-color);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            margin-bottom: 2rem;
+            font-weight: 700;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .player-input {
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .player-input input {
+            padding-left: 40px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-light);
+            height: 50px;
+        }
+
+        .player-input input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .player-input i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent-color);
+        }
+
+        #wheelContainer {
+            position: relative;
+            width: 100%;
+            max-width: 350px;
+            height: 350px;
+            margin: 2rem auto;
+        }
+
+        #wheel {
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+        }
+
+        #pointer {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid var(--accent-color);
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
+            z-index: 10;
+        }
+        
+        .btn-game {
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-game:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+
+        .btn-game:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+        }
+
+        .btn-success {
+            background: linear-gradient(to right, var(--success-color), #27ae60);
+        }
+
+        .btn-warning {
+            background: linear-gradient(to right, var(--accent-color), #f39c12);
+        }
+
+        .btn-danger {
+            background: linear-gradient(to right, var(--danger-color), #c0392b);
+        }
+
+        /* Modal Customization */
+        .modal-content {
+            background: var(--card-bg);
+            color: var(--text-light);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+        }
+        .modal-header, .modal-footer {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        .modal-body img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        /* Animasi Jumpscare */
+        @keyframes jumpscare-zoom {
+            0% { transform: scale(0.5); opacity: 0; }
+            75% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        #jumpscareImage {
+            animation: jumpscare-zoom 0.4s ease-out;
+        }
+        .zonk-text {
+            font-family: 'Poppins', sans-serif;
+            color: var(--danger-color);
+            text-shadow: 0 0 10px var(--danger-color), 0 0 20px var(--danger-color);
+            font-size: 3rem;
+            font-weight: 700;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Summary Cards */
+        .summary-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        .summary-card img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+        .summary-card h5 {
+            color: var(--accent-color);
+        }
+        
+        /* Progress Indicator */
+        .progress-container {
+            margin: 20px 0;
+        }
+        .progress {
+            height: 8px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        .progress-bar {
+            background: linear-gradient(to right, var(--accent-color), var(--primary-color));
+            border-radius: 10px;
+        }
+
+        /* Player Turn Indicator */
+        .player-turn-indicator {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .player-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+        .player-dot.active {
+            background-color: var(--accent-color);
+            transform: scale(1.3);
+        }
+        .player-dot.completed {
+            background-color: var(--success-color);
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .fab:hover {
+            transform: scale(1.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            #wheelContainer {
+                max-width: 280px;
+                height: 280px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .btn-game {
+                font-size: 1rem;
+                padding: 10px 20px;
+            }
+            
+            .zonk-text {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #wheelContainer {
+                max-width: 250px;
+                height: 250px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .game-container {
+                padding: 15px;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-spinner {
+            display: none;
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-color);
+            animation: spin 1s ease-in-out infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Confetti Animation */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: var(--accent-color);
+            position: absolute;
+            animation: confetti-fall 3s linear forwards;
+        }
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <!-- FASE 1: INPUT PEMAIN -->
+        <div id="inputPhase" class="game-phase active">
+            <h1><i class="bi bi-people-fill"></i> Wheel Gacha Multi-Pemain</h1>
+            <div class="card p-4">
+                <div class="card-body">
+                    <h4 class="card-title text-center mb-4">Masukkan Nama Pemain (Maks. 5)</h4>
+                    <div id="playerInputs">
+                        <div class="player-input">
+                            <i class="bi bi-person-fill"></i>
+                            <input type="text" class="form-control player-name" placeholder="Nama Pemain 1" required>
+                        </div>
+                        <div class="player-input">
+                            <i class="bi bi-person-fill"></i>
+                            <input type="text" class="form-control player-name" placeholder="Nama Pemain 2">
+                        </div>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <button id="addPlayerBtn" class="btn btn-warning btn-game"><i class="bi bi-plus-circle"></i> Tambah Pemain</button>
+                    </div>
+                    <button id="startOrderBtn" class="btn btn-success btn-game w-100 mt-4"><i class="bi bi-play-fill"></i> Mulai Permainan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- FASE 2: PENENTUAN URUTAN -->
+        <div id="orderPhase" class="game-phase">
+            <h1><i class="bi bi-shuffle"></i> Penentuan Urutan Gacha</h1>
+            <p class="text-center">Memutar untuk menentukan siapa yang pertama...</p>
+            <div class="progress-container">
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <p class="text-center mt-2">Langkah 1 dari 3</p>
+            </div>
+            <div id="wheelContainer">
+                <div id="pointer"></div>
+                <canvas id="orderWheel" width="350" height="350"></canvas>
+            </div>
+            <button id="spinOrderBtn" class="btn btn-warning btn-game w-100"><i class="bi bi-arrow-repeat"></i> Putar Urutan</button>
+        </div>
+
+        <!-- FASE 3: GACHA UTAMA -->
+        <div id="gamePhase" class="game-phase">
+            <h1><i class="bi bi-gift-fill"></i> Waktu Gacha!</h1>
+            <h3 id="currentPlayerTurn" class="text-center text-info mb-4"></h3>
+            <div class="progress-container">
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" style="width: 50%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <p class="text-center mt-2">Langkah 2 dari 3</p>
+            </div>
+            <div class="player-turn-indicator" id="playerTurnIndicator">
+                <!-- Akan diisi oleh JavaScript -->
+            </div>
+            <div id="wheelContainer">
+                <div id="pointer"></div>
+                <canvas id="prizeWheel" width="350" height="350"></canvas>
+            </div>
+            <div class="loading-spinner" id="loadingSpinner"></div>
+            <button id="spinPrizeBtn" class="btn btn-success btn-game w-100"><i class="bi bi-dice-5-fill"></i> Gacha!</button>
+        </div>
+
+        <!-- FASE 4: RINGKASAN AKHIR -->
+        <div id="summaryPhase" class="game-phase">
+            <h1><i class="bi bi-trophy-fill"></i> Hasil Akhir</h1>
+            <div class="progress-container">
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <p class="text-center mt-2">Langkah 3 dari 3</p>
+            </div>
+            <div id="summaryList" class="mt-4">
+                <!-- Akan diisi oleh JavaScript -->
+            </div>
+            <button id="playAgainBtn" class="btn btn-primary btn-game w-100 mt-4"><i class="bi bi-arrow-clockwise"></i> Main Lagi</button>
+        </div>
+    </div>
+
+    <!-- Floating Action Button untuk Info -->
+    <div class="fab" id="infoFab">
+        <i class="bi bi-info-lg"></i>
+    </div>
+
+    <!-- Modal Hadiah -->
+    <div class="modal fade" id="prizeModal" tabindex="-1" aria-labelledby="prizeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="prizeModalLabel"><i class="bi bi-trophy-fill text-warning"></i> SELAMAT!</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="prizeImage" src="" alt="Hadiah">
+                    <h3 id="prizeText" class="mt-3"></h3>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Lanjut</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Jumpscare Zonk -->
+    <div class="modal fade" id="jumpscareModal" tabindex="-1" aria-labelledby="jumpscareModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-dark border-0">
+                <div class="modal-body p-0 text-center">
+                    <img id="jumpscareImage" src="https://picsum.photos/seed/hantu/600/400.jpg" alt="Zonk!">
+                    <h1 class="zonk-text">ZONK!</h1>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Ya Allah!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Info -->
+    <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="infoModalLabel"><i class="bi bi-info-circle"></i> Cara Bermain</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ol>
+                        <li>Masukkan nama pemain (maksimal 5 pemain)</li>
+                        <li>Putar roda untuk menentukan urutan gacha</li>
+                        <li>Setiap pemain memutar roda gacha untuk mendapatkan hadiah</li>
+                        <li>Lihat hasil akhir di ringkasan</li>
+                    </ol>
+                    <p class="mt-3"><strong>Catatan:</strong> Waspadai ZONK! Selamat bermain!</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Mengerti</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- STATE MANAGEMENT ---
+            const gameState = {
+                players: [],
+                playerOrder: [],
+                currentPlayerIndex: 0,
+                prizes: [
+                    { text: 'Mobil', color: '#FF6B6B', image: 'https://picsum.photos/seed/mobil/300/200.jpg', isZonk: false },
+                    { text: 'Jam Tangan', color: '#4ECDC4', image: 'https://picsum.photos/seed/jamtangan/300/200.jpg', isZonk: false },
+                    { text: 'HP', color: '#45B7D1', image: 'https://picsum.photos/seed/hp/300/200.jpg', isZonk: false },
+                    { text: 'Rumah', color: '#96CEB4', image: 'https://picsum.photos/seed/rumah/300/200.jpg', isZonk: false },
+                    { text: 'Sepeda', color: '#FFEAA7', image: 'https://picsum.photos/seed/sepeda/300/200.jpg', isZonk: false },
+                    { text: 'ZONK', color: '#8B0000', image: 'https://picsum.photos/seed/hantu/300/200.jpg', isZonk: true }
+                ]
+            };
+
+            // --- DOM ELEMENTS ---
+            const phases = {
+                input: document.getElementById('inputPhase'),
+                order: document.getElementById('orderPhase'),
+                game: document.getElementById('gamePhase'),
+                summary: document.getElementById('summaryPhase')
+            };
+            const playerInputsDiv = document.getElementById('playerInputs');
+            const addPlayerBtn = document.getElementById('addPlayerBtn');
+            const startOrderBtn = document.getElementById('startOrderBtn');
+            const spinOrderBtn = document.getElementById('spinOrderBtn');
+            const spinPrizeBtn = document.getElementById('spinPrizeBtn');
+            const currentPlayerTurnH3 = document.getElementById('currentPlayerTurn');
+            const playAgainBtn = document.getElementById('playAgainBtn');
+            const summaryListDiv = document.getElementById('summaryList');
+            const playerTurnIndicator = document.getElementById('playerTurnIndicator');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const infoFab = document.getElementById('infoFab');
+            
+            const prizeModal = new bootstrap.Modal(document.getElementById('prizeModal'));
+            const jumpscareModal = new bootstrap.Modal(document.getElementById('jumpscareModal'));
+            const infoModal = new bootstrap.Modal(document.getElementById('infoModal'));
+
+            // --- EVENT LISTENERS ---
+            infoFab.addEventListener('click', () => {
+                infoModal.show();
+            });
+
+            // --- UTILITY FUNCTIONS ---
+            function showPhase(phaseName) {
+                Object.values(phases).forEach(p => p.classList.remove('active'));
+                phases[phaseName].classList.add('active');
+                
+                // Update progress bar
+                let progress = 0;
+                let step = 0;
+                
+                switch(phaseName) {
+                    case 'input':
+                        progress = 0;
+                        step = 0;
+                        break;
+                    case 'order':
+                        progress = 25;
+                        step = 1;
+                        break;
+                    case 'game':
+                        progress = 50;
+                        step = 2;
+                        break;
+                    case 'summary':
+                        progress = 100;
+                        step = 3;
+                        break;
+                }
+                
+                const progressBar = document.querySelector('.progress-bar');
+                const progressText = document.querySelector('.progress-container p');
+                
+                if (progressBar && progressText) {
+                    progressBar.style.width = `${progress}%`;
+                    progressText.textContent = step > 0 ? `Langkah ${step} dari 3` : '';
+                }
+            }
+
+            function drawWheel(canvasId, segments) {
+                const canvas = document.getElementById(canvasId);
+                const ctx = canvas.getContext('2d');
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const radius = canvas.width / 2 - 10;
+                const arc = Math.PI * 2 / segments.length;
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                segments.forEach((segment, i) => {
+                    const angle = arc * i;
+                    ctx.beginPath();
+                    ctx.fillStyle = segment.color;
+                    ctx.moveTo(centerX, centerY);
+                    ctx.arc(centerX, centerY, radius, angle, angle + arc, false);
+                    ctx.lineTo(centerX, centerY);
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+
+                    ctx.save();
+                    ctx.fillStyle = segment.isZonk ? '#fff' : '#000';
+                    ctx.font = 'bold 16px Poppins';
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(angle + arc / 2);
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(segment.text, radius / 2, 0);
+                    ctx.restore();
+                });
+            }
+            
+            function spinWheel(canvasId, callback) {
+                const canvas = document.getElementById(canvasId);
+                const spinAngle = Math.random() * 360 + 360 * 5;
+                const currentRotation = parseFloat(canvas.dataset.rotation || 0);
+                const newRotation = currentRotation + spinAngle;
+                
+                canvas.style.transform = `rotate(${newRotation}deg)`;
+                canvas.dataset.rotation = newRotation;
+
+                setTimeout(() => {
+                    const normalizedAngle = newRotation % 360;
+                    const winningAngle = 360 - normalizedAngle;
+                    const segmentAngle = 360 / (canvasId === 'orderWheel' ? gameState.players.length : gameState.prizes.length);
+                    const winningIndex = Math.floor(winningAngle / segmentAngle);
+                    callback(winningIndex);
+                }, 4000);
+            }
+
+            function createConfetti() {
+                const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#f8b500'];
+                
+                for (let i = 0; i < 50; i++) {
+                    setTimeout(() => {
+                        const confetti = document.createElement('div');
+                        confetti.className = 'confetti';
+                        confetti.style.left = `${Math.random() * 100}%`;
+                        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                        confetti.style.animationDuration = `${Math.random() * 3 + 2}s`;
+                        document.body.appendChild(confetti);
+                        
+                        setTimeout(() => {
+                            confetti.remove();
+                        }, 5000);
+                    }, i * 30);
+                }
+            }
+
+            // --- PHASE 1: INPUT LOGIC ---
+            addPlayerBtn.addEventListener('click', () => {
+                const currentInputs = playerInputsDiv.querySelectorAll('.player-input');
+                if (currentInputs.length < 5) {
+                    const newInputDiv = document.createElement('div');
+                    newInputDiv.className = 'player-input';
+                    newInputDiv.innerHTML = `
+                        <i class="bi bi-person-fill"></i>
+                        <input type="text" class="form-control player-name" placeholder="Nama Pemain ${currentInputs.length + 1}">
+                    `;
+                    playerInputsDiv.appendChild(newInputDiv);
+                    if (currentInputs.length === 4) addPlayerBtn.disabled = true;
+                }
+            });
+
+            startOrderBtn.addEventListener('click', () => {
+                const names = Array.from(document.querySelectorAll('.player-name'))
+                                   .map(input => input.value.trim())
+                                   .filter(name => name !== '');
+
+                if (names.length < 2) {
+                    alert('Masukkan setidaknya 2 pemain!');
+                    return;
+                }
+
+                gameState.players = names.map(name => ({ name, prize: null }));
+                showPhase('order');
+                drawWheel('orderWheel', gameState.players.map(p => ({ text: p.name, color: `hsl(${Math.random() * 360}, 70%, 50%)` })));
+            });
+
+            // --- PHASE 2: ORDER LOGIC ---
+            spinOrderBtn.addEventListener('click', () => {
+                spinOrderBtn.disabled = true;
+                spinWheel('orderWheel', (winningIndex) => {
+                    // Buat urutan: pemenang pertama, sisanya diacak
+                    const winner = gameState.players[winningIndex];
+                    const others = gameState.players.filter((p, i) => i !== winningIndex);
+                    gameState.playerOrder = [winningIndex, ...others.map(p => gameState.players.indexOf(p)).sort(() => Math.random() - 0.5)];
+                    
+                    setTimeout(() => {
+                        showPhase('game');
+                        drawWheel('prizeWheel', gameState.prizes);
+                        updateTurnDisplay();
+                        createPlayerTurnIndicator();
+                    }, 1500);
+                });
+            });
+
+            // --- PHASE 3: GAME LOGIC ---
+            function updateTurnDisplay() {
+                const playerIndex = gameState.playerOrder[gameState.currentPlayerIndex];
+                const player = gameState.players[playerIndex];
+                currentPlayerTurnH3.innerHTML = `Giliran Pemain ${gameState.currentPlayerIndex + 1}: <strong>${player.name}</strong>`;
+            }
+
+            function createPlayerTurnIndicator() {
+                playerTurnIndicator.innerHTML = '';
+                
+                gameState.playerOrder.forEach((playerIndex, i) => {
+                    const dot = document.createElement('div');
+                    dot.className = 'player-dot';
+                    
+                    if (i < gameState.currentPlayerIndex) {
+                        dot.classList.add('completed');
+                    } else if (i === gameState.currentPlayerIndex) {
+                        dot.classList.add('active');
+                    }
+                    
+                    playerTurnIndicator.appendChild(dot);
+                });
+            }
+
+            spinPrizeBtn.addEventListener('click', () => {
+                spinPrizeBtn.disabled = true;
+                loadingSpinner.style.display = 'block';
+                
+                spinWheel('prizeWheel', (winningIndex) => {
+                    loadingSpinner.style.display = 'none';
+                    const prize = gameState.prizes[winningIndex];
+                    const playerIndex = gameState.playerOrder[gameState.currentPlayerIndex];
+                    const player = gameState.players[playerIndex];
+                    player.prize = prize;
+
+                    if (prize.isZonk) {
+                        jumpscareModal.show();
+                    } else {
+                        document.getElementById('prizeImage').src = prize.image;
+                        document.getElementById('prizeText').innerText = `${player.name}, selamat anda mendapatkan hadiah ${prize.text}!`;
+                        prizeModal.show();
+                        createConfetti();
+                    }
+                });
+            });
+
+            // Event listener untuk kedua modal
+            [prizeModal._element, jumpscareModal._element].forEach(el => {
+                el.addEventListener('hidden.bs.modal', () => {
+                    gameState.currentPlayerIndex++;
+                    
+                    // Update player turn indicator
+                    const dots = playerTurnIndicator.querySelectorAll('.player-dot');
+                    if (dots[gameState.currentPlayerIndex - 1]) {
+                        dots[gameState.currentPlayerIndex - 1].classList.remove('active');
+                        dots[gameState.currentPlayerIndex - 1].classList.add('completed');
+                    }
+                    
+                    if (gameState.currentPlayerIndex < gameState.players.length) {
+                        updateTurnDisplay();
+                        if (dots[gameState.currentPlayerIndex]) {
+                            dots[gameState.currentPlayerIndex].classList.add('active');
+                        }
+                        spinPrizeBtn.disabled = false;
+                    } else {
+                        showSummary();
+                    }
+                });
+            });
+
+            // --- PHASE 4: SUMMARY LOGIC ---
+            function showSummary() {
+                showPhase('summary');
+                summaryListDiv.innerHTML = ''; // Kosongkan dulu
+                
+                gameState.players.forEach((player, index) => {
+                    const prize = player.prize;
+                    const card = document.createElement('div');
+                    card.className = 'summary-card animate__animated animate__fadeInUp';
+                    card.style.animationDelay = `${index * 0.1}s`;
+                    
+                    card.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <img src="${prize.image}" alt="${prize.text}">
+                            <div class="ms-3">
+                                <h5>${player.name}</h5>
+                                <p class="mb-0">Mendapatkan: <strong class="${prize.isZonk ? 'text-danger' : 'text-success'}">${prize.text}</strong></p>
+                            </div>
+                        </div>
+                    `;
+                    summaryListDiv.appendChild(card);
+                });
+            }
+            
+            playAgainBtn.addEventListener('click', () => {
+                // Reset game state
+                gameState.players = [];
+                gameState.playerOrder = [];
+                gameState.currentPlayerIndex = 0;
+                
+                // Reset UI
+                document.querySelectorAll('.player-name').forEach(input => input.value = '');
+                playerInputsDiv.innerHTML = `
+                    <div class="player-input">
+                        <i class="bi bi-person-fill"></i>
+                        <input type="text" class="form-control player-name" placeholder="Nama Pemain 1" required>
+                    </div>
+                    <div class="player-input">
+                        <i class="bi bi-person-fill"></i>
+                        <input type="text" class="form-control player-name" placeholder="Nama Pemain 2">
+                    </div>
+                `;
+                addPlayerBtn.disabled = false;
+                spinOrderBtn.disabled = false;
+                spinPrizeBtn.disabled = false;
+                
+                // Reset canvas rotation
+                document.getElementById('orderWheel').style.transform = 'rotate(0deg)';
+                document.getElementById('prizeWheel').style.transform = 'rotate(0deg)';
+                delete document.getElementById('orderWheel').dataset.rotation;
+                delete document.getElementById('prizeWheel').dataset.rotation;
+
+                showPhase('input');
+            });
+
+        });
+    </script>
+</body>
+</html>
